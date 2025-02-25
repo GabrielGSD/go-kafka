@@ -26,7 +26,10 @@ func main() {
 
 func NewKafkaProducer() *kafka.Producer {
 	configMap := &kafka.ConfigMap{
-		"bootstrap.servers": "go-kafka-kafka-1:9092",
+		"bootstrap.servers":   "go-kafka-kafka-1:9092",
+		"delivery.timeout.ms": 0,
+		"acks":                1,     // 1 = só confirma que a mensagem foi recebida pelo broker, 0 = não confirma nada, all = confirma que a mensagem foi recebida por todos os brokers
+		"enable.idempotence":  false, // garante que a mensagem seja enviada apenas uma vez e na ordem correta (só funciona com acks=all), mas pode causar lentidão.
 	}
 	p, err := kafka.NewProducer(configMap)
 	if err != nil {
