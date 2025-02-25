@@ -7,8 +7,19 @@ import (
 )
 
 func main() {
+	deliveryChan := make(chan kafka.Event)
 	producer := NewKafkaProducer()
-	Publish("Mensagem", "teste", producer, nil)
+	Publish("Mensagem", "teste", producer, nil, deliveryChan)
+
+	// é sincrono, então só vai passar para o próximo passo quando a mensagem for entregue
+	e := <-deliveryChan
+	msg := e.(*kafka.Message)
+	if msg.TopicPartition.Error != nil {
+		log.Println("Erro ao enviar a mensagem", msg.TopicPartition.Error)
+	} else {
+		log.Println("Mensagem enviada", msg.TopicPartition)
+	}
+
 	producer.Flush(1000)
 }
 
@@ -24,13 +35,13 @@ func NewKafkaProducer() *kafka.Producer {
 }
 
 // O value (msg) é um array de bytes, então não necessariamente precisa ser uma string, pode ser um json, por exemplo.
-func Publish(msg string, topic string, producer *kafka.Producer, key []byte) error {
+func Publish(msg string, topic string, producer *kafka.Producer, key []byte, deliveryChan chan kafka.Event) error {
 	message := &kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          []byte(msg),
 		Key:            key,
 	}
-	err := producer.Produce(message, nil)
+	err := producer.Produce(message, deliveryChan)
 	if err != nil {
 		return err
 	}
