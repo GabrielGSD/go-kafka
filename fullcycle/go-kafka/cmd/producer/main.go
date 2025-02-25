@@ -9,9 +9,9 @@ import (
 func main() {
 	deliveryChan := make(chan kafka.Event)
 	producer := NewKafkaProducer()
-	Publish("Mensagem", "teste", producer, nil, deliveryChan)
+	Publish("transferiu", "teste", producer, []byte("transferencia2"), deliveryChan)
 	go DeliveryReport(deliveryChan) //async
-	producer.Flush(1000)
+	producer.Flush(5000)
 	// // é sincrono, então só vai passar para o próximo passo quando a mensagem for entregue
 	// e := <-deliveryChan
 	// msg := e.(*kafka.Message)
@@ -28,8 +28,8 @@ func NewKafkaProducer() *kafka.Producer {
 	configMap := &kafka.ConfigMap{
 		"bootstrap.servers":   "go-kafka-kafka-1:9092",
 		"delivery.timeout.ms": 0,
-		"acks":                1,     // 1 = só confirma que a mensagem foi recebida pelo broker, 0 = não confirma nada, all = confirma que a mensagem foi recebida por todos os brokers
-		"enable.idempotence":  false, // garante que a mensagem seja enviada apenas uma vez e na ordem correta (só funciona com acks=all), mas pode causar lentidão.
+		"acks":                "all", // 1 = só confirma que a mensagem foi recebida pelo broker, 0 = não confirma nada, all = confirma que a mensagem foi recebida por todos os brokers
+		"enable.idempotence":  true,  // garante que a mensagem seja enviada apenas uma vez e na ordem correta (só funciona com acks=all), mas pode causar lentidão.
 	}
 	p, err := kafka.NewProducer(configMap)
 	if err != nil {
